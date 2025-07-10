@@ -1,0 +1,35 @@
+ARG GRADLE_IMAGE=gradle:8.4-jdk17
+ARG RUNTIME_IMAGE=azul/zulu-openjdk:17.0.15-17.58
+
+FROM ${GRADLE_IMAGE} AS builder
+
+ARG SERVICE_NAME
+ARG FULL_IMAGE_NAME
+
+WORKDIR /home/gradle/project
+
+COPY ${SERVICE_NAME} ./app
+WORKDIR /home/gradle/project/app
+
+RUN echo "[INFO] Building for image: ${FULL_IMAGE_NAME}" && \
+    gradle clean build --no-daemon
+
+FROM ${RUNTIME_IMAGE}
+
+ARG APP_USER=appuser
+ARG SERVICE_NAME
+ARG FULL_IMAGE_NAME
+
+RUN groupadd --system appgroup && \
+    useradd --system --create-home --gid appgroup ${APP_USER}
+
+WORKDIR /app
+
+COPY --from=builder /home/gradle/project/app/build/libs/*.jar app.jar
+
+RUN echo "[INFO] Final image: ${FULL_IMAGE_NAME}" && \
+    chown -R ${APP_USER}:appgroup /app
+
+USER ${APP_USER}
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_TOOL_OPTIONS -jar app.jar"]

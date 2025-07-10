@@ -1,0 +1,16 @@
+
+services:
+  registry:
+    image: registry:2
+    hostname: ${CLUSTER_NAME}-registry
+    container_name: ${CLUSTER_NAME}-registry
+    ports:
+      - "5000:5000"
+    restart: always
+    networks:
+      - k3dnet
+
+networks:
+  k3dnet:
+    external: true
+    name: k3d-${CLUSTER_NAME}
