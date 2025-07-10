@@ -3,6 +3,10 @@ K3D_TEMPLATE = k3d-config.template.yaml
 K3D_CONFIG = k3d-config.yaml
 DEFAULT_REG = localhost:5000
 DOCKER_COMPOSE_CMD = CLUSTER_NAME=$(CLUSTER_NAME) docker compose
+FLUENT_BIT_NAMESPACE=logging
+FLUENT_BIT_RELEASE=fluent-bit
+ROOT_DIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+FLUENT_BIR_DIR ?= $(ROOT_DIR)/.fluent-bit
 
 .PHONY: create.network
 create.network: ## 🌐 Create a K3d network
@@ -25,12 +29,15 @@ stop.registry: ## 🛑 Stop Docker registry
 .PHONY: generate.k3d.config
 generate.k3d.config:
 	@echo "[INFO] Generating config for $(CLUSTER_NAME)"
-	@env CLUSTER_NAME=$(CLUSTER_NAME) envsubst < $(K3D_TEMPLATE) > $(K3D_CONFIG)
+	@CLUSTER_NAME="$(CLUSTER_NAME)" FLUENT_BIR_DIR="$(FLUENT_BIR_DIR)" \
+		envsubst < $(K3D_TEMPLATE) > $(K3D_CONFIG)
 	@echo "[INFO] Config generated: $(K3D_CONFIG)"
 
 .PHONY: create.cluster
 create.cluster: generate.k3d.config ## 🚀 Create K3d cluster with custom registry
 	@echo "[INFO] Creating K3d cluster: $(CLUSTER_NAME)"
+	@mkdir -p $(FLUENT_BIR_DIR)/data/gc-logs
+	@touch $(FLUENT_BIR_DIR)/dummy-machine-id
 	@k3d cluster create --config $(K3D_CONFIG)
 	@echo "[INFO] Cluster $(CLUSTER_NAME) created"
 
@@ -52,6 +59,35 @@ calico.test: ## 🧪 Wait for Calico pods to be ready
 	@kubectl wait --for=condition=Ready pod --all -n kube-system --timeout=180s
 	@echo "[INFO] Calico pods are ready"
 
+PHONY: fluentbit.install
+fluentbit.install: ## 🔧 Install Fluent Bit without broken /etc/machine-id mount
+	@echo "[INFO] Adding Fluent Bit Helm repo (if needed)..."
+	@helm repo add fluent https://fluent.github.io/helm-charts || true
+	@helm repo update
+	@echo "[INFO] Installing Fluent Bit to namespace: $(FLUENT_BIT_NAMESPACE)"
+	@helm upgrade --install $(FLUENT_BIT_RELEASE) fluent/fluent-bit \
+		--namespace $(FLUENT_BIT_NAMESPACE) \
+		--create-namespace \
+		-f fluentbit-values.yaml \
+		--set serviceMonitor.enabled=false
+	@echo "[INFO] Fluent Bit installed"
+
+.PHONY: fluentbit.test
+fluentbit.test: ## ✅ Wait for Fluent Bit pods to be ready
+	@echo "[INFO] Waiting for Fluent Bit pods..."
+	@kubectl wait --for=condition=Ready pod --all -n $(FLUENT_BIT_NAMESPACE) --timeout=180s
+	@echo "[INFO] Fluent Bit is ready"
+
+.PHONY: fluentbit.logs
+fluentbit.logs: ## 📜 Tail Fluent Bit logs
+	@POD=$$(kubectl get pod -n $(FLUENT_BIT_NAMESPACE) -l "app.kubernetes.io/name=fluent-bit" -o jsonpath="{.items[0].metadata.name}"); \
+	echo "📜 [LOGS] Fluent Bit pod: $$POD"; \
+	kubectl logs -n $(FLUENT_BIT_NAMESPACE) $$POD -f
+
+.PHONY: init.observability
+init.observability: fluentbit.install fluentbit.test ## 🔎 Setup logging tools
+	@echo "[INFO] Observability stack ready (Fluent Bit)"
+
 .PHONY: get.nodes
 get.nodes: ## 📋 List Kubernetes nodes
 	@echo "[INFO] Getting nodes in $(CLUSTER_NAME)"
@@ -68,7 +104,7 @@ kubeconfig: ## 🧾 Merge kubeconfig and switch context
 	@k3d kubeconfig merge $(CLUSTER_NAME) --switch-context
 
 .PHONY: init
-init: create.network start.registry create.cluster clean.temp.cluster.config calico.init calico.test ## 🧰 Initialize the resources needed
+init: create.network start.registry create.cluster clean.temp.cluster.config calico.init calico.test init.observability ## 🧰 Initialize the resources needed
 	@echo "[INFO] Started initialization of $(CLUSTER_NAME) Cluster"
 	@echo "[INFO] Completed initialization of $(CLUSTER_NAME) Cluster"
 
@@ -76,6 +112,7 @@ init: create.network start.registry create.cluster clean.temp.cluster.config cal
 delete.network: ## ❌ Delete a K3d network
 	@echo "[INFO] Deleting network for $(CLUSTER_NAME)"
 	@docker network rm k3d-$(CLUSTER_NAME) || true
+	@rm -rf $(FLUENT_BIR_DIR)
 	@echo "[INFO] Network deleted for $(CLUSTER_NAME)"
 
 .PHONY: delete.cluster

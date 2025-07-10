@@ -18,6 +18,14 @@ ports:
     nodeFilters:
       - loadbalancer
 
+volumes:
+  - volume: ${FLUENT_BIR_DIR}/data/gc-logs:/gc-logs
+    nodeFilters:
+      - all
+  - volume: ${FLUENT_BIR_DIR}/dummy-machine-id:/etc/machine-id
+    nodeFilters:
+      - all
+
 options:
   k3s:
     extraArgs:
