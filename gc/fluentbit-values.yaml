@@ -1,9 +1,42 @@
-volumeMounts:
-  - name: etcmachineid
-    mountPath: /etc/machine-id
+config:
+  outputs: |
+    [OUTPUT]
+        Name  file
+        Match *
+        Path  /fluent-bit/logs
+        File  fluent-bit-logs.log
+        Format plain
 
-volumes:
-  - name: etcmachineid
-    hostPath:
-      path: /dev/null
-      type: FileOrCreate
+output:
+  elasticsearch:
+    enabled: false
+  file:
+    enabled: false
+
+serviceMonitor:
+  enabled: false
+
+pod:
+  extraInitContainers:
+    - name: ensure-logs-dir
+      image: busybox
+      command: ["sh", "-c", "mkdir -p /fluent-bit/logs && chmod 777 /fluent-bit/logs"]
+      volumeMounts:
+        - mountPath: /fluent-bit/logs
+          name: fluentbitlogs
+
+  extraVolumeMounts:
+    - mountPath: /fluent-bit/logs
+      name: fluentbitlogs
+    - mountPath: /etc/machine-id
+      name: etcmachineid
+
+  extraVolumes:
+    - name: fluentbitlogs
+      hostPath:
+        path: /fluent-bit/logs
+        type: DirectoryOrCreate
+    - name: etcmachineid
+      hostPath:
+        path: /dev/null
+        type: FileOrCreate

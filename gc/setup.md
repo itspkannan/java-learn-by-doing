@@ -16,11 +16,12 @@
 The help command will display all the project specific command that is needed for bootstrapping the application, running test and cleaning up the resources.
 
 ```bash
+
 ❯ make help
 
 Available commands:
   app.logs             📜 Show logs from pod
-  app.pod              🔍 Get pod name for release
+  app.pods             🔍 Get pod name for release
   app.service          🌐 Show service endpoint
   build                🛠️ Build Docker image for given app
   calico.init          🧬 Initial Calico CNI
@@ -33,6 +34,9 @@ Available commands:
   delete.cluster       🧹 Delete the k3d cluster and registry
   delete.network       ❌ Delete a K3d network
   describe.cluster     🔍 Describe the k3d cluster
+  fluentbit.install    🔧 Install Fluent Bit without broken /etc/machine-id mount
+  fluentbit.logs       📜 Tail Fluent Bit logs
+  fluentbit.test       ✅ Wait for Fluent Bit pods to be ready
   get.nodes            📋 List Kubernetes nodes
   helm.image           🔍 Show deployed image from Helm
   helm.install         📦 Install Helm chart
@@ -41,6 +45,7 @@ Available commands:
   helm.upgrade         🔁 Upgrade Helm chart
   help                 📘 Show this help message
   init                 🧰 Initialize the resources needed
+  init.observability   🔎 Setup logging tools
   inspect              🖼️ Print and inspect the image
   kubeconfig           🧾 Merge kubeconfig and switch context
   publish              🚀 Build, tag and push image

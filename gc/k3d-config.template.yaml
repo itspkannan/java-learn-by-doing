@@ -19,13 +19,18 @@ ports:
       - loadbalancer
 
 volumes:
-  - volume: ${FLUENT_BIR_DIR}/data/gc-logs:/gc-logs
+  - volume: ${FLUENT_BIT_DIR}/sim-k8s-logs/var/log/containers:/var/log/containers:rw
     nodeFilters:
       - all
-  - volume: ${FLUENT_BIR_DIR}/dummy-machine-id:/etc/machine-id
+  - volume: ${FLUENT_BIT_DIR}/data/gc-logs:/gc-logs:rw
     nodeFilters:
       - all
-
+  - volume: ${FLUENT_BIT_DIR}/dummy-machine-id:/etc/machine-id:rw
+    nodeFilters:
+      - all
+  - volume: ${FLUENT_BIT_DIR}/logs:/fluent-bit/logs:rw
+    nodeFilters:
+      - all
 options:
   k3s:
     extraArgs:
