@@ -21,6 +21,16 @@ volumes:
   logs:
     enabled: true
     mountPath: /logs
-    
+    useHostPath: true
+    hostPath: /gc-logs
+
+sidecar:
+  fluentbit:
+    enabled: true
+    image: fluent/fluent-bit:2.2.0
+    mountPath: /logs
+    configMap: fluent-bit-config
+
+
 app:
   name: gc-app1-jdk17

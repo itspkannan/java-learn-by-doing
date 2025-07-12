@@ -34,8 +34,31 @@ spec:
             - name: log-volume
               mountPath: {{ .Values.volumes.logs.mountPath }}
           {{- end }}
-      {{- if .Values.volumes.logs.enabled }}
+
+        {{- if .Values.sidecar.fluentbit.enabled }}
+        - name: fluent-bit
+          image: {{ .Values.sidecar.fluentbit.image }}
+          args: ["-c", "/fluent-bit/etc/fluent-bit.conf"]
+          volumeMounts:
+            - name: log-volume
+              mountPath: {{ .Values.sidecar.fluentbit.mountPath }}
+            - name: fluent-bit-config
+              mountPath: /fluent-bit/etc
+        {{- end }}
+
       volumes:
+        {{- if .Values.volumes.logs.enabled }}
         - name: log-volume
+          {{- if .Values.volumes.logs.useHostPath }}
+          hostPath:
+            path: {{ .Values.volumes.logs.hostPath }}
+            type: DirectoryOrCreate
+          {{- else }}
           emptyDir: {}
-      {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.sidecar.fluentbit.enabled }}
+        - name: fluent-bit-config
+          configMap:
+            name: {{ .Values.sidecar.fluentbit.configMap }}
+        {{- end }}

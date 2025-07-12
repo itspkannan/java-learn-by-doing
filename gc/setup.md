@@ -1,20 +1,8 @@
 # Setup
 
-## Prerequiste
+### Cluster Command
 
-- K3d
-- docker
-- gradle
-- JDK 17, JDK 21 ( Use tools like asdf to manage) 
-- Helm
-- asciinema, agg, gifski ( Command execution gif )
-
-## Development Guide
-
-### Help Command
-
-The help command will display all the project specific command that is needed for bootstrapping the application, running test and cleaning up the resources.
-
+The help command will display all the project specific command that is needed for bootstrapping the application, running test and cleaning up the resources. The list doesnot include the complete list only has cluster specific commands.
 ```bash
 
 ❯ make help
@@ -62,37 +50,13 @@ The infrastructure for application is
 
 - K3d Cluster
 - Docker Registry
+- CNI - Calico
+- Fluentbid 
 
 The command will create necessary infrastructure for the application
 
 ![Init Cluster](docs/images/init_cluster.gif)
 
-
-###  Build , Publish, Deploy 
-
-By default the image is build in JDK 17 , the gradle image is `gradle:8.4-jdk17` and runtime image is `azul/zulu-openjdk:17.0.15-17.58`. To use specific gradle and runtime jdk base image pass these as build argumewnts for example
-
-
-- **Build and publish the image to local docker respository**
-  
-```bash
-# Default build using JDK 17 version
-make build publish APP_NAME=gc-app1-jdk17 VERSION=latest GRADLE_IMAGE=gradle:8.4-jdk17 RUNTIME_IMAGE=azul/zulu-openjdk:17.0.15-17.58
-
-# To use JDK 21
-make build publish APP_NAME=gc-app1-jdk17 GRADLE_IMAGE=gradle:8.4-jdk21 RUNTIME_IMAGE=azul/zulu-openjdk:21.50.19-ca-jdk
-
-```
-
-* **Deploy the application**
-
-![Install](docs/images/install.gif)
-
-* Pods, Service and Logs of deployed apps
-
-![Pod_Service](docs/images/pods_service.gif)
-
-![Logs](docs/images/logs.gif)
 
 ### Cleanup the resource 
 

@@ -36,13 +36,9 @@ generate.k3d.config:
 .PHONY: create.cluster
 create.cluster: generate.k3d.config ## 🚀 Create K3d cluster with custom registry
 	@echo "[INFO] Creating K3d cluster: $(CLUSTER_NAME)"
-	@mkdir -p $(FLUENT_BIT_DIR)/data/gc-logs
+	@mkdir -p $(FLUENT_BIT_DIR)/{gc-logs,var/log/containers,logs}
 	@touch $(FLUENT_BIT_DIR)/dummy-machine-id
-	@mkdir -p $(FLUENT_BIT_DIR)/sim-k8s-logs/var/log/containers
-	@mkdir -p $(FLUENT_BIT_DIR)/logs
-	@chmod 777 $(FLUENT_BIT_DIR)/data/gc-logs
-	@chmod 777 $(FLUENT_BIT_DIR)/logs
-	@chmod 777 $(FLUENT_BIT_DIR)/sim-k8s-logs/var/log/containers
+	@chmod 777 $(FLUENT_BIT_DIR)/{gc-logs,var/log/containers,logs}
 	@k3d cluster create --config $(K3D_CONFIG)
 	@echo "[INFO] Cluster $(CLUSTER_NAME) created"
 
